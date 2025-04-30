@@ -1,0 +1,209 @@
+basePath: /
+definitions:
+  gorm.DeletedAt:
+    properties:
+      time:
+        type: string
+      valid:
+        description: Valid is true if Time is not NULL
+        type: boolean
+    type: object
+  models.ErrorResponse:
+    properties:
+      error:
+        description: 'example: invalid request'
+        type: string
+    type: object
+  models.PaginatedPersons:
+    properties:
+      data:
+        description: Данные
+        items:
+          $ref: '#/definitions/models.Person'
+        type: array
+      page:
+        description: Текущая страница
+        type: integer
+      page_size:
+        description: Размер страницы
+        type: integer
+      total:
+        description: Общее число записей
+        type: integer
+      total_pages:
+        description: Всего страниц
+        type: integer
+    type: object
+  models.Person:
+    properties:
+      age:
+        type: integer
+      createdAt:
+        type: string
+      deletedAt:
+        $ref: '#/definitions/gorm.DeletedAt'
+      gender:
+        type: string
+      id:
+        type: integer
+      name:
+        type: string
+      nationality:
+        type: string
+      patronymic:
+        type: string
+      surname:
+        type: string
+      updatedAt:
+        type: string
+    type: object
+  models.ResponseMessage:
+    properties:
+      message:
+        description: 'example: success'
+        type: string
+    type: object
+host: localhost:8000
+info:
+  contact: {}
+  description: Testovoye zadanie
+  title: PersonAPI
+  version: "1.0"
+paths:
+  /person:
+    get:
+      consumes:
+      - application/json
+      parameters:
+      - description: Имя для фильтра поиска
+        in: query
+        name: name
+        type: string
+      - description: Фамилия для фильтра
+        in: query
+        name: surname
+        type: string
+      - description: Минимальный возраст
+        in: query
+        name: min_age
+        type: integer
+      - description: Максимальный возраст
+        in: query
+        name: max_age
+        type: integer
+      - description: Пол
+        in: query
+        name: gender
+        type: string
+      - description: Код страны
+        in: query
+        name: nationality
+        type: string
+      - description: Номер страницы
+        in: query
+        name: page
+        type: integer
+      - description: Размер страницы
+        in: query
+        name: page_size
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/models.PaginatedPersons'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+      summary: Получить список Person
+      tags:
+      - person
+    post:
+      consumes:
+      - application/json
+      parameters:
+      - description: Данные нового Person
+        in: body
+        name: person
+        required: true
+        schema:
+          $ref: '#/definitions/models.Person'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/models.ResponseMessage'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+      summary: Создать нового Person
+      tags:
+      - person
+  /person/{id}:
+    delete:
+      consumes:
+      - application/json
+      parameters:
+      - description: ID Person
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/models.ResponseMessage'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+      summary: Удалить Person по ID
+      tags:
+      - person
+    put:
+      consumes:
+      - application/json
+      parameters:
+      - description: ID Person
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: Новые данные Person
+        in: body
+        name: person
+        required: true
+        schema:
+          $ref: '#/definitions/models.Person'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/models.ResponseMessage'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+      summary: Обновить Person по ID
+      tags:
+      - person
+swagger: "2.0"
