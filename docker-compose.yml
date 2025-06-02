@@ -1,32 +1,37 @@
 services:
   server-app:
-    build: ./backend
+    build: 
+      context: .
+      dockerfile: ./backend/deploy/Dockerfile
     container_name: server_app
+    restart: always
     depends_on:
-      - db
+      - pgsql
     ports:
       - "8000:8000"
     networks:
       - backend
 
-  db:
+  pgsql:
     image: postgres:16
     container_name: postgres_db
     restart: always
     environment:
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: 12345
-      POSTGRES_DB: testovaya
+      POSTGRES_DB: testovoye
     ports:
       - "5432:5432"
     volumes:
-      - pg_data:/var/lib/postgresql/data
+      - pgsql_data:/var/lib/postgresql/data
     networks:
       - backend
   pgadmin:
     image: dpage/pgadmin4
     container_name: pgadmin
     restart: always
+    depends_on:
+      - pgsql
     ports:
       - "5050:80"
     environment:
@@ -36,11 +41,9 @@ services:
       - pgadmin_data:/var/lib/pgadmin
     networks:
       - backend
-    depends_on:
-      - db
 
 volumes:
-  pg_data:
+  pgsql_data:
   pgadmin_data:
 
 networks:

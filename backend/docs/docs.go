@@ -24,29 +24,31 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "tags": [
-                    "person"
+                    "Person"
                 ],
-                "summary": "Получить список Person",
+                "summary": "Получить список Person с фильтрацией и пагинацией",
                 "parameters": [
                     {
                         "type": "string",
-                        "description": "Имя для фильтра поиска",
+                        "description": "Фильтрация по имени (partial match)",
                         "name": "name",
                         "in": "query"
                     },
                     {
                         "type": "string",
-                        "description": "Фамилия для фильтра",
+                        "description": "Фильтрация по фамилии (partial match)",
                         "name": "surname",
                         "in": "query"
                     },
                     {
+                        "minimum": 0,
                         "type": "integer",
                         "description": "Минимальный возраст",
                         "name": "min_age",
                         "in": "query"
                     },
                     {
+                        "minimum": 0,
                         "type": "integer",
                         "description": "Максимальный возраст",
                         "name": "max_age",
@@ -54,24 +56,29 @@ const docTemplate = `{
                     },
                     {
                         "type": "string",
-                        "description": "Пол",
+                        "description": "Пол (male/female)",
                         "name": "gender",
                         "in": "query"
                     },
                     {
                         "type": "string",
-                        "description": "Код страны",
+                        "description": "Код страны (ISO Alpha-2)",
                         "name": "nationality",
                         "in": "query"
                     },
                     {
+                        "minimum": 1,
                         "type": "integer",
-                        "description": "Номер страницы",
+                        "default": 1,
+                        "description": "Страница",
                         "name": "page",
                         "in": "query"
                     },
                     {
+                        "maximum": 100,
+                        "minimum": 1,
                         "type": "integer",
+                        "default": 10,
                         "description": "Размер страницы",
                         "name": "page_size",
                         "in": "query"
@@ -81,13 +88,62 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/models.PaginatedPersons"
+                            "$ref": "#/definitions/domain.PaginatedPersons"
                         }
                     },
                     "400": {
-                        "description": "Bad Request",
+                        "description": "Неверные query-параметры",
                         "schema": {
-                            "$ref": "#/definitions/models.ErrorResponse"
+                            "$ref": "#/definitions/v1.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Ошибка при выборке из БД",
+                        "schema": {
+                            "$ref": "#/definitions/v1.ErrorResponse"
+                        }
+                    }
+                }
+            },
+            "put": {
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Person"
+                ],
+                "summary": "Обновить существующего Person",
+                "parameters": [
+                    {
+                        "description": "Данные для обновления Person",
+                        "name": "input",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/v1.updatePersonInput"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/v1.simpleMessageResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Неправильный формат входных данных или неверный UUID",
+                        "schema": {
+                            "$ref": "#/definitions/v1.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Ошибка при обновлении в БД",
+                        "schema": {
+                            "$ref": "#/definitions/v1.ErrorResponse"
                         }
                     }
                 }
@@ -100,17 +156,17 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "tags": [
-                    "person"
+                    "Person"
                 ],
                 "summary": "Создать нового Person",
                 "parameters": [
                     {
                         "description": "Данные нового Person",
-                        "name": "person",
+                        "name": "input",
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/models.Person"
+                            "$ref": "#/definitions/v1.newPersonInput"
                         }
                     }
                 ],
@@ -118,71 +174,19 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/models.ResponseMessage"
+                            "$ref": "#/definitions/v1.createPersonResponse"
                         }
                     },
                     "400": {
-                        "description": "Bad Request",
+                        "description": "Неверный формат входных данных",
                         "schema": {
-                            "$ref": "#/definitions/models.ErrorResponse"
+                            "$ref": "#/definitions/v1.ErrorResponse"
                         }
                     },
                     "500": {
-                        "description": "Internal Server Error",
+                        "description": "Внутренняя ошибка сервера",
                         "schema": {
-                            "$ref": "#/definitions/models.ErrorResponse"
-                        }
-                    }
-                }
-            }
-        },
-        "/person/{id}": {
-            "put": {
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "person"
-                ],
-                "summary": "Обновить Person по ID",
-                "parameters": [
-                    {
-                        "type": "integer",
-                        "description": "ID Person",
-                        "name": "id",
-                        "in": "path",
-                        "required": true
-                    },
-                    {
-                        "description": "Новые данные Person",
-                        "name": "person",
-                        "in": "body",
-                        "required": true,
-                        "schema": {
-                            "$ref": "#/definitions/models.Person"
-                        }
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "$ref": "#/definitions/models.ResponseMessage"
-                        }
-                    },
-                    "400": {
-                        "description": "Bad Request",
-                        "schema": {
-                            "$ref": "#/definitions/models.ErrorResponse"
-                        }
-                    },
-                    "500": {
-                        "description": "Internal Server Error",
-                        "schema": {
-                            "$ref": "#/definitions/models.ErrorResponse"
+                            "$ref": "#/definitions/v1.ErrorResponse"
                         }
                     }
                 }
@@ -195,15 +199,15 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "tags": [
-                    "person"
+                    "Person"
                 ],
                 "summary": "Удалить Person по ID",
                 "parameters": [
                     {
-                        "type": "integer",
-                        "description": "ID Person",
+                        "type": "string",
+                        "description": "UUID идентификатор Person",
                         "name": "id",
-                        "in": "path",
+                        "in": "query",
                         "required": true
                     }
                 ],
@@ -211,13 +215,19 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/models.ResponseMessage"
+                            "$ref": "#/definitions/v1.simpleMessageResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "ID не указан или неверный формат",
+                        "schema": {
+                            "$ref": "#/definitions/v1.ErrorResponse"
                         }
                     },
                     "500": {
-                        "description": "Internal Server Error",
+                        "description": "Ошибка при удалении из БД",
                         "schema": {
-                            "$ref": "#/definitions/models.ErrorResponse"
+                            "$ref": "#/definitions/v1.ErrorResponse"
                         }
                     }
                 }
@@ -225,56 +235,30 @@ const docTemplate = `{
         }
     },
     "definitions": {
-        "gorm.DeletedAt": {
-            "type": "object",
-            "properties": {
-                "time": {
-                    "type": "string"
-                },
-                "valid": {
-                    "description": "Valid is true if Time is not NULL",
-                    "type": "boolean"
-                }
-            }
-        },
-        "models.ErrorResponse": {
-            "type": "object",
-            "properties": {
-                "error": {
-                    "description": "example: invalid request",
-                    "type": "string"
-                }
-            }
-        },
-        "models.PaginatedPersons": {
+        "domain.PaginatedPersons": {
             "type": "object",
             "properties": {
                 "data": {
-                    "description": "Данные",
                     "type": "array",
                     "items": {
-                        "$ref": "#/definitions/models.Person"
+                        "$ref": "#/definitions/domain.Person"
                     }
                 },
                 "page": {
-                    "description": "Текущая страница",
                     "type": "integer"
                 },
-                "page_size": {
-                    "description": "Размер страницы",
+                "pageSize": {
                     "type": "integer"
                 },
                 "total": {
-                    "description": "Общее число записей",
                     "type": "integer"
                 },
-                "total_pages": {
-                    "description": "Всего страниц",
+                "totalPages": {
                     "type": "integer"
                 }
             }
         },
-        "models.Person": {
+        "domain.Person": {
             "type": "object",
             "properties": {
                 "age": {
@@ -283,14 +267,11 @@ const docTemplate = `{
                 "createdAt": {
                     "type": "string"
                 },
-                "deletedAt": {
-                    "$ref": "#/definitions/gorm.DeletedAt"
-                },
                 "gender": {
                     "type": "string"
                 },
                 "id": {
-                    "type": "integer"
+                    "type": "string"
                 },
                 "name": {
                     "type": "string"
@@ -309,12 +290,100 @@ const docTemplate = `{
                 }
             }
         },
-        "models.ResponseMessage": {
+        "v1.ErrorResponse": {
+            "type": "object",
+            "properties": {
+                "error": {
+                    "description": "Описание ошибки\nexample: invalid input body",
+                    "type": "string"
+                }
+            }
+        },
+        "v1.createPersonResponse": {
+            "type": "object",
+            "properties": {
+                "id": {
+                    "description": "UUID нового Person\nexample: 3fa85f64-5717-4562-b3fc-2c963f66afa6",
+                    "type": "string"
+                }
+            }
+        },
+        "v1.newPersonInput": {
+            "type": "object",
+            "required": [
+                "name",
+                "surname"
+            ],
+            "properties": {
+                "name": {
+                    "description": "Name имя человека\nRequired: true\nMin Length: 2\nMax Length: 100",
+                    "type": "string",
+                    "maxLength": 100,
+                    "minLength": 2
+                },
+                "patronymic": {
+                    "description": "Patronymic отчество (необязательно)\nMin Length: 2\nMax Length: 100",
+                    "type": "string",
+                    "maxLength": 100,
+                    "minLength": 2
+                },
+                "surname": {
+                    "description": "Surname фамилия человека\nRequired: true\nMin Length: 2\nMax Length: 100",
+                    "type": "string",
+                    "maxLength": 100,
+                    "minLength": 2
+                }
+            }
+        },
+        "v1.simpleMessageResponse": {
             "type": "object",
             "properties": {
                 "message": {
-                    "description": "example: success",
+                    "description": "Сообщение\nexample: success",
                     "type": "string"
+                }
+            }
+        },
+        "v1.updatePersonInput": {
+            "type": "object",
+            "required": [
+                "id"
+            ],
+            "properties": {
+                "age": {
+                    "description": "Age новый возраст (необязательно)\nMinimum: 0\nExample: 30",
+                    "type": "integer",
+                    "minimum": 0
+                },
+                "gender": {
+                    "description": "Gender новый пол (необязательно)\nExample: female",
+                    "type": "string"
+                },
+                "id": {
+                    "description": "ID идентификатор Person (UUID)\nRequired: true\nExample: 3fa85f64-5717-4562-b3fc-2c963f66afa6",
+                    "type": "string"
+                },
+                "name": {
+                    "description": "Name новое имя (необязательно)\nMin Length: 2\nMax Length: 100",
+                    "type": "string",
+                    "maxLength": 100,
+                    "minLength": 2
+                },
+                "nationality": {
+                    "description": "Nationality новый код страны (необязательно)\nExample: US",
+                    "type": "string"
+                },
+                "patronymic": {
+                    "description": "Patronymic новое отчество (необязательно)\nMin Length: 2\nMax Length: 100",
+                    "type": "string",
+                    "maxLength": 100,
+                    "minLength": 2
+                },
+                "surname": {
+                    "description": "Surname новая фамилия (необязательно)\nMin Length: 2\nMax Length: 100",
+                    "type": "string",
+                    "maxLength": 100,
+                    "minLength": 2
                 }
             }
         }
@@ -323,16 +392,14 @@ const docTemplate = `{
 
 // SwaggerInfo holds exported Swagger Info so clients can modify it
 var SwaggerInfo = &swag.Spec{
-	Version:          "1.0",
+	Version:          "",
 	Host:             "localhost:8000",
-	BasePath:         "/",
+	BasePath:         "/api/v1",
 	Schemes:          []string{},
-	Title:            "PersonAPI",
-	Description:      "Testovoye zadanie",
+	Title:            "",
+	Description:      "",
 	InfoInstanceName: "swagger",
 	SwaggerTemplate:  docTemplate,
-	LeftDelim:        "{{",
-	RightDelim:       "}}",
 }
 
 func init() {

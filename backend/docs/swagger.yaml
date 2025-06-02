@@ -1,51 +1,29 @@
-basePath: /
 definitions:
-  gorm.DeletedAt:
-    properties:
-      time:
-        type: string
-      valid:
-        description: Valid is true if Time is not NULL
-        type: boolean
-    type: object
-  models.ErrorResponse:
-    properties:
-      error:
-        description: 'example: invalid request'
-        type: string
-    type: object
-  models.PaginatedPersons:
+  domain.PaginatedPersons:
     properties:
       data:
-        description: Данные
         items:
-          $ref: '#/definitions/models.Person'
+          $ref: '#/definitions/domain.Person'
         type: array
       page:
-        description: Текущая страница
         type: integer
-      page_size:
-        description: Размер страницы
+      pageSize:
         type: integer
       total:
-        description: Общее число записей
         type: integer
-      total_pages:
-        description: Всего страниц
+      totalPages:
         type: integer
     type: object
-  models.Person:
+  domain.Person:
     properties:
       age:
         type: integer
       createdAt:
         type: string
-      deletedAt:
-        $ref: '#/definitions/gorm.DeletedAt'
       gender:
         type: string
       id:
-        type: integer
+        type: string
       name:
         type: string
       nationality:
@@ -57,54 +35,186 @@ definitions:
       updatedAt:
         type: string
     type: object
-  models.ResponseMessage:
+  v1.ErrorResponse:
     properties:
-      message:
-        description: 'example: success'
+      error:
+        description: |-
+          Описание ошибки
+          example: invalid input body
         type: string
     type: object
-host: localhost:8000
+  v1.createPersonResponse:
+    properties:
+      id:
+        description: |-
+          UUID нового Person
+          example: 3fa85f64-5717-4562-b3fc-2c963f66afa6
+        type: string
+    type: object
+  v1.newPersonInput:
+    properties:
+      name:
+        description: |-
+          Name имя человека
+          Required: true
+          Min Length: 2
+          Max Length: 100
+        maxLength: 100
+        minLength: 2
+        type: string
+      patronymic:
+        description: |-
+          Patronymic отчество (необязательно)
+          Min Length: 2
+          Max Length: 100
+        maxLength: 100
+        minLength: 2
+        type: string
+      surname:
+        description: |-
+          Surname фамилия человека
+          Required: true
+          Min Length: 2
+          Max Length: 100
+        maxLength: 100
+        minLength: 2
+        type: string
+    required:
+    - name
+    - surname
+    type: object
+  v1.simpleMessageResponse:
+    properties:
+      message:
+        description: |-
+          Сообщение
+          example: success
+        type: string
+    type: object
+  v1.updatePersonInput:
+    properties:
+      age:
+        description: |-
+          Age новый возраст (необязательно)
+          Minimum: 0
+          Example: 30
+        minimum: 0
+        type: integer
+      gender:
+        description: |-
+          Gender новый пол (необязательно)
+          Example: female
+        type: string
+      id:
+        description: |-
+          ID идентификатор Person (UUID)
+          Required: true
+          Example: 3fa85f64-5717-4562-b3fc-2c963f66afa6
+        type: string
+      name:
+        description: |-
+          Name новое имя (необязательно)
+          Min Length: 2
+          Max Length: 100
+        maxLength: 100
+        minLength: 2
+        type: string
+      nationality:
+        description: |-
+          Nationality новый код страны (необязательно)
+          Example: US
+        type: string
+      patronymic:
+        description: |-
+          Patronymic новое отчество (необязательно)
+          Min Length: 2
+          Max Length: 100
+        maxLength: 100
+        minLength: 2
+        type: string
+      surname:
+        description: |-
+          Surname новая фамилия (необязательно)
+          Min Length: 2
+          Max Length: 100
+        maxLength: 100
+        minLength: 2
+        type: string
+    required:
+    - id
+    type: object
 info:
   contact: {}
-  description: Testovoye zadanie
-  title: PersonAPI
-  version: "1.0"
 paths:
   /person:
+    delete:
+      consumes:
+      - application/json
+      parameters:
+      - description: UUID идентификатор Person
+        in: query
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/v1.simpleMessageResponse'
+        "400":
+          description: ID не указан или неверный формат
+          schema:
+            $ref: '#/definitions/v1.ErrorResponse'
+        "500":
+          description: Ошибка при удалении из БД
+          schema:
+            $ref: '#/definitions/v1.ErrorResponse'
+      summary: Удалить Person по ID
+      tags:
+      - Person
     get:
       consumes:
       - application/json
       parameters:
-      - description: Имя для фильтра поиска
+      - description: Фильтрация по имени (partial match)
         in: query
         name: name
         type: string
-      - description: Фамилия для фильтра
+      - description: Фильтрация по фамилии (partial match)
         in: query
         name: surname
         type: string
       - description: Минимальный возраст
         in: query
+        minimum: 0
         name: min_age
         type: integer
       - description: Максимальный возраст
         in: query
+        minimum: 0
         name: max_age
         type: integer
-      - description: Пол
+      - description: Пол (male/female)
         in: query
         name: gender
         type: string
-      - description: Код страны
+      - description: Код страны (ISO Alpha-2)
         in: query
         name: nationality
         type: string
-      - description: Номер страницы
+      - default: 1
+        description: Страница
         in: query
+        minimum: 1
         name: page
         type: integer
-      - description: Размер страницы
+      - default: 10
+        description: Размер страницы
         in: query
+        maximum: 100
+        minimum: 1
         name: page_size
         type: integer
       produces:
@@ -113,97 +223,72 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/models.PaginatedPersons'
+            $ref: '#/definitions/domain.PaginatedPersons'
         "400":
-          description: Bad Request
+          description: Неверные query-параметры
           schema:
-            $ref: '#/definitions/models.ErrorResponse'
-      summary: Получить список Person
+            $ref: '#/definitions/v1.ErrorResponse'
+        "500":
+          description: Ошибка при выборке из БД
+          schema:
+            $ref: '#/definitions/v1.ErrorResponse'
+      summary: Получить список Person с фильтрацией и пагинацией
       tags:
-      - person
+      - Person
     post:
       consumes:
       - application/json
       parameters:
       - description: Данные нового Person
         in: body
-        name: person
+        name: input
         required: true
         schema:
-          $ref: '#/definitions/models.Person'
+          $ref: '#/definitions/v1.newPersonInput'
       produces:
       - application/json
       responses:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/models.ResponseMessage'
+            $ref: '#/definitions/v1.createPersonResponse'
         "400":
-          description: Bad Request
+          description: Неверный формат входных данных
           schema:
-            $ref: '#/definitions/models.ErrorResponse'
+            $ref: '#/definitions/v1.ErrorResponse'
         "500":
-          description: Internal Server Error
+          description: Внутренняя ошибка сервера
           schema:
-            $ref: '#/definitions/models.ErrorResponse'
+            $ref: '#/definitions/v1.ErrorResponse'
       summary: Создать нового Person
       tags:
-      - person
-  /person/{id}:
-    delete:
-      consumes:
-      - application/json
-      parameters:
-      - description: ID Person
-        in: path
-        name: id
-        required: true
-        type: integer
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            $ref: '#/definitions/models.ResponseMessage'
-        "500":
-          description: Internal Server Error
-          schema:
-            $ref: '#/definitions/models.ErrorResponse'
-      summary: Удалить Person по ID
-      tags:
-      - person
+      - Person
     put:
       consumes:
       - application/json
       parameters:
-      - description: ID Person
-        in: path
-        name: id
-        required: true
-        type: integer
-      - description: Новые данные Person
+      - description: Данные для обновления Person
         in: body
-        name: person
+        name: input
         required: true
         schema:
-          $ref: '#/definitions/models.Person'
+          $ref: '#/definitions/v1.updatePersonInput'
       produces:
       - application/json
       responses:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/models.ResponseMessage'
+            $ref: '#/definitions/v1.simpleMessageResponse'
         "400":
-          description: Bad Request
+          description: Неправильный формат входных данных или неверный UUID
           schema:
-            $ref: '#/definitions/models.ErrorResponse'
+            $ref: '#/definitions/v1.ErrorResponse'
         "500":
-          description: Internal Server Error
+          description: Ошибка при обновлении в БД
           schema:
-            $ref: '#/definitions/models.ErrorResponse'
-      summary: Обновить Person по ID
+            $ref: '#/definitions/v1.ErrorResponse'
+      summary: Обновить существующего Person
       tags:
-      - person
+      - Person
 swagger: "2.0"
