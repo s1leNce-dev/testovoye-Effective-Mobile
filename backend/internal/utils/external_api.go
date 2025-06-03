@@ -1,12 +1,15 @@
 package utils
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"log"
 	"net/http"
 	"os"
 	"time"
+
+	"golang.org/x/sync/errgroup"
 )
 
 type FetcherAPIByName struct {
@@ -14,37 +17,15 @@ type FetcherAPIByName struct {
 }
 
 func NewFetcherAPIByName(timeout time.Duration) *FetcherAPIByName {
-	return &FetcherAPIByName{
-		timeout: timeout,
-	}
+	return &FetcherAPIByName{timeout: timeout}
 }
 
 func (f *FetcherAPIByName) GetNameMetrics(name string) (age int, gender string, nationality string, err error) {
 	client := &http.Client{Timeout: f.timeout}
 
-	ageApi := os.Getenv("API_AGIFY")
-	genderApi := os.Getenv("API_GENDERIZE")
-	natApi := os.Getenv("API_NATIONALIZE")
-
-	urlsDatas := map[string]interface{}{
-		ageApi:    &ageData{},
-		genderApi: &genderData{},
-		natApi:    &natData{},
-	}
-
-	ch := make(chan fetchResult, len(urlsDatas))
-
-	for baseURL, template := range urlsDatas {
-		go func(url string, target interface{}) {
-			err := getJSON(client, url+name, target)
-			if err != nil {
-				ch <- fetchResult{URL: url, Err: err}
-				return
-			}
-
-			ch <- fetchResult{URL: url, Data: target, Err: nil}
-		}(baseURL, template)
-	}
+	ageURL := os.Getenv("API_AGIFY")
+	genderURL := os.Getenv("API_GENDERIZE")
+	natURL := os.Getenv("API_NATIONALIZE")
 
 	var (
 		ageVal         float64
@@ -52,29 +33,49 @@ func (f *FetcherAPIByName) GetNameMetrics(name string) (age int, gender string, 
 		nationalityVal string
 	)
 
-	for i := 0; i < len(urlsDatas); i++ {
-		res := <-ch
-		if res.Err != nil {
-			return 0, "", "", fmt.Errorf("error fetching %s: %w", res.URL, res.Err)
-		}
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
 
-		log.Println("[DEBUG] res:", res)
+	eg, _ := errgroup.WithContext(ctx)
 
-		switch res.URL {
-		case ageApi:
-			ageVal = res.Data.(*ageData).Age
-		case genderApi:
-			genderVal = res.Data.(*genderData).Gender
-		case natApi:
-			nat := res.Data.(*natData)
-			if len(nat.Country) > 0 {
-				nationalityVal = nat.Country[0].CountryID
-			}
+	eg.Go(func() error {
+		var data ageData
+		if err := getJSON(client, ageURL+name, &data); err != nil {
+			return fmt.Errorf("error fetching age from %s: %w", ageURL, err)
 		}
+		ageVal = data.Age
+		log.Printf("[DEBUG] fetched age: %v\n", ageVal)
+		return nil
+	})
+
+	eg.Go(func() error {
+		var data genderData
+		if err := getJSON(client, genderURL+name, &data); err != nil {
+			return fmt.Errorf("error fetching gender from %s: %w", genderURL, err)
+		}
+		genderVal = data.Gender
+		log.Printf("[DEBUG] fetched gender: %s\n", genderVal)
+		return nil
+	})
+
+	eg.Go(func() error {
+		var data natData
+		if err := getJSON(client, natURL+name, &data); err != nil {
+			return fmt.Errorf("error fetching nationality from %s: %w", natURL, err)
+		}
+		if len(data.Country) > 0 {
+			nationalityVal = data.Country[0].CountryID
+		}
+		log.Printf("[DEBUG] fetched nationality: %s\n", nationalityVal)
+		return nil
+	})
+
+	if err := eg.Wait(); err != nil {
+		return 0, "", "", err
 	}
 
 	if ageVal == 0 || genderVal == "" || nationalityVal == "" {
-		return 0, "", "", fmt.Errorf("incomplete data from APIs")
+		return 0, "", "", fmt.Errorf("incomplete data from APIs: age=%v, gender=%q, nationality=%q", ageVal, genderVal, nationalityVal)
 	}
 
 	return int(ageVal), genderVal, nationalityVal, nil
@@ -92,12 +93,6 @@ type natData struct {
 	Country []struct {
 		CountryID string `json:"country_id"`
 	} `json:"country"`
-}
-
-type fetchResult struct {
-	URL  string
-	Data interface{}
-	Err  error
 }
 
 func getJSON(client *http.Client, url string, target interface{}) error {

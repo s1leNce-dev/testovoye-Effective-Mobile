@@ -13,9 +13,10 @@ func (h *HandlerV1) initPersonRoutes(api *gin.RouterGroup) {
 	person := api.Group("/person")
 	{
 		person.GET("/", h.getPersonData)
+		person.GET("/:id", h.getPersonByID)
 		person.POST("/", h.createNewPerson)
 		person.PUT("/", h.updatePerson)
-		person.DELETE("/", h.deletePerson)
+		person.DELETE("/:id", h.deletePersonByID)
 	}
 }
 
@@ -91,6 +92,34 @@ func (h *HandlerV1) getPersonData(c *gin.Context) {
 	c.JSON(http.StatusOK, result)
 }
 
+// @Summary Получить Person по ID
+// @Tags Person
+// @Accept json
+// @Produce json
+// @Param id path string true "UUID идентификатор Person"
+// @Success 200 {object} domain.Person
+// @Failure 400 {object} ErrorResponse "Неверный формат UUID"
+// @Failure 404 {object} ErrorResponse "Person не найден"
+// @Failure 500 {object} ErrorResponse "Внутренняя ошибка сервера"
+// @Router /person/{id} [get]
+func (h *HandlerV1) getPersonByID(c *gin.Context) {
+	id := c.Param("id")
+	if id == "" {
+		newErrorResponse(c, http.StatusBadRequest, "id is required", "empty id in path")
+		return
+	}
+
+	person, err := h.services.Person.GetByID(id)
+	if err != nil {
+		newErrorResponse(c, http.StatusBadRequest, "failed to find a person", err.Error())
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"data": person,
+	})
+}
+
 // @Summary Обновить существующего Person
 // @Tags Person
 // @Accept json
@@ -135,19 +164,19 @@ func (h *HandlerV1) updatePerson(c *gin.Context) {
 // @Tags Person
 // @Accept json
 // @Produce json
-// @Param id query string true "UUID идентификатор Person"
+// @Param id path string true "UUID идентификатор Person"
 // @Success 200 {object} simpleMessageResponse
 // @Failure 400 {object} ErrorResponse "ID не указан или неверный формат"
 // @Failure 500 {object} ErrorResponse "Ошибка при удалении из БД"
-// @Router /person [delete]
-func (h *HandlerV1) deletePerson(c *gin.Context) {
-	var input deletePersonInput
-	if err := c.ShouldBindQuery(&input); err != nil {
-		newErrorResponse(c, http.StatusBadRequest, "id is required", err.Error())
+// @Router /person/{id} [delete]
+func (h *HandlerV1) deletePersonByID(c *gin.Context) {
+	id := c.Param("id")
+	if id == "" {
+		newErrorResponse(c, http.StatusBadRequest, "id is required", "empty id in path")
 		return
 	}
 
-	if err := h.services.Person.DeleteByID(input.ID); err != nil {
+	if err := h.services.Person.DeleteByID(id); err != nil {
 		newErrorResponse(c, http.StatusInternalServerError, "failed to delete person", err.Error())
 		return
 	}

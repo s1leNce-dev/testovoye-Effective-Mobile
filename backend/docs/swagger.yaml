@@ -1,3 +1,4 @@
+basePath: /api/v1/
 definitions:
   domain.PaginatedPersons:
     properties:
@@ -143,37 +144,14 @@ definitions:
     required:
     - id
     type: object
+host: localhost:8000
 info:
   contact: {}
+  description: REST API testovoye
+  title: Testovoye Effective Mobile
+  version: "1.0"
 paths:
   /person:
-    delete:
-      consumes:
-      - application/json
-      parameters:
-      - description: UUID идентификатор Person
-        in: query
-        name: id
-        required: true
-        type: string
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            $ref: '#/definitions/v1.simpleMessageResponse'
-        "400":
-          description: ID не указан или неверный формат
-          schema:
-            $ref: '#/definitions/v1.ErrorResponse'
-        "500":
-          description: Ошибка при удалении из БД
-          schema:
-            $ref: '#/definitions/v1.ErrorResponse'
-      summary: Удалить Person по ID
-      tags:
-      - Person
     get:
       consumes:
       - application/json
@@ -289,6 +267,65 @@ paths:
           schema:
             $ref: '#/definitions/v1.ErrorResponse'
       summary: Обновить существующего Person
+      tags:
+      - Person
+  /person/{id}:
+    delete:
+      consumes:
+      - application/json
+      parameters:
+      - description: UUID идентификатор Person
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/v1.simpleMessageResponse'
+        "400":
+          description: ID не указан или неверный формат
+          schema:
+            $ref: '#/definitions/v1.ErrorResponse'
+        "500":
+          description: Ошибка при удалении из БД
+          schema:
+            $ref: '#/definitions/v1.ErrorResponse'
+      summary: Удалить Person по ID
+      tags:
+      - Person
+    get:
+      consumes:
+      - application/json
+      parameters:
+      - description: UUID идентификатор Person
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/domain.Person'
+        "400":
+          description: Неверный формат UUID
+          schema:
+            $ref: '#/definitions/v1.ErrorResponse'
+        "404":
+          description: Person не найден
+          schema:
+            $ref: '#/definitions/v1.ErrorResponse'
+        "500":
+          description: Внутренняя ошибка сервера
+          schema:
+            $ref: '#/definitions/v1.ErrorResponse'
+      summary: Получить Person по ID
       tags:
       - Person
 swagger: "2.0"

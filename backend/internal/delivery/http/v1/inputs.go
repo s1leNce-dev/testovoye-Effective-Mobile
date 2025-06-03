@@ -88,11 +88,3 @@ type updatePersonInput struct {
 	// Example: US
 	Nationality string `json:"nationality,omitempty"`
 }
-
-type deletePersonInput struct {
-	// ID идентификатор Person (UUID)
-	// in: query
-	// required: true
-	// example: 3fa85f64-5717-4562-b3fc-2c963f66afa6
-	ID string `form:"id" binding:"required,uuid4"`
-}

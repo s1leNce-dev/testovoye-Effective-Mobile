@@ -8,12 +8,12 @@ import (
 
 type Person struct {
 	ID          uuid.UUID `gorm:"type:uuid;primaryKey"`
-	Name        string    `gorm:"not null"`
-	Surname     string    `gorm:"not null"`
-	Patronymic  string
-	Age         int    `gorm:"not null"`
-	Gender      string `gorm:"not null"`
-	Nationality string `gorm:"not null"`
+	Name        string    `gorm:"type:varchar(100);not null;index:idx_person_name"`
+	Surname     string    `gorm:"type:varchar(100);not null;index:idx_person_surname"`
+	Patronymic  string    `gorm:"type:varchar(100)"`
+	Age         int       `gorm:"not null;index:idx_person_age"`
+	Gender      string    `gorm:"type:varchar(10);not null;index:idx_person_gender"`
+	Nationality string    `gorm:"type:char(2);not null;index:idx_person_nationality"`
 	CreatedAt   time.Time
 	UpdatedAt   time.Time
 }

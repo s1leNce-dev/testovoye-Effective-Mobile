@@ -19,7 +19,7 @@ func (r *PersonRepo) Create(newPerson domain.Person) error {
 	return r.db.Create(&newPerson).Error
 }
 
-func (r *PersonRepo) Get(q domain.PersonQuery) (domain.PaginatedPersons, error) {
+func (r *PersonRepo) GetByFilter(q domain.PersonQuery) (domain.PaginatedPersons, error) {
 	var (
 		persons []domain.Person
 		total   int64
@@ -76,6 +76,14 @@ func (r *PersonRepo) Get(q domain.PersonQuery) (domain.PaginatedPersons, error) 
 		TotalPages: totalPages,
 	}
 	return result, nil
+}
+
+func (r *PersonRepo) GetByID(id string) (domain.Person, error) {
+	var user domain.Person
+	if err := r.db.Where("id = ?", id).First(&user).Error; err != nil {
+		return domain.Person{}, err
+	}
+	return user, nil
 }
 
 func (r *PersonRepo) DeleteByID(id string) error {

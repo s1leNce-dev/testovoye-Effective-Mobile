@@ -51,7 +51,11 @@ func (p *PersonService) Add(newPerson NewPersonCreate) (string, error) {
 }
 
 func (p *PersonService) GetWithFilter(query domain.PersonQuery) (domain.PaginatedPersons, error) {
-	return p.repo.Get(query)
+	return p.repo.GetByFilter(query)
+}
+
+func (p *PersonService) GetByID(id string) (domain.Person, error) {
+	return p.repo.GetByID(id)
 }
 
 func (p *PersonService) DeleteByID(id string) error {
